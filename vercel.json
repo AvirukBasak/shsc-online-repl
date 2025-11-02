@@ -1,0 +1,9 @@
+{
+  "build": {
+    "env": {},
+    "outputDirectory": "build"
+  },
+  "files": [
+    "public/bin/shsc-linux"
+  ]
+}

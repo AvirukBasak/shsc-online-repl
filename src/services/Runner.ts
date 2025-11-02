@@ -1,14 +1,10 @@
 import fs from "fs";
-import path, { dirname } from "path";
+import path from "path";
 import { execFile, execSync } from "child_process";
 import { Readable } from "stream";
 import { EnvSetup } from "@/services/EnvSetup";
 import { CustomApiError } from "@/types/errors";
 import { Nullable } from "@/types";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export interface ExecResult {
   code?: Nullable<string | number>;
@@ -30,7 +26,7 @@ export class Runner {
     }
 
     // this is the path to the binary file resource
-    const binResPath = path.resolve(__dirname, EnvSetup.BIN_RES_DIR, EnvSetup.BIN_NAME);
+    const binResPath = path.resolve(EnvSetup.BIN_RES_DIR, EnvSetup.BIN_NAME);
     // this is where he binary file will be copied to for exec
     const binTmpPath = path.resolve(EnvSetup.TmpBinDir, EnvSetup.BIN_NAME);
 

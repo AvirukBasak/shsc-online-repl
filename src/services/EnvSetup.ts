@@ -6,7 +6,7 @@ import { Nullable } from "@/types";
 export class EnvSetup {
   // ------------------ constants --------------------
 
-  static readonly BIN_RES_DIR = "../res/bin";
+  static readonly BIN_RES_DIR = process.cwd() + "/public/bin";
   static readonly TMP_DIR_NAME = "runner";
   static readonly BIN_NAME = "shsc-linux";
   static readonly CODEFILE_NAME = "code.shsc";
