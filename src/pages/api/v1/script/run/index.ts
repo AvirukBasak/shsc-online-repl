@@ -30,6 +30,10 @@ export default WithMiddleware(
    * ```
    *
    * With `Content-Type: text/plain`:
+   * 
+   * ```
+   * <string>
+   * ```
    *
    * #### Response
    * ```ts
