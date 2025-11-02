@@ -3,6 +3,12 @@
 - Language Docs [`@AvirukBasak/shsc-lang/LanguageDocs`](https://github.com/AvirukBasak/shsc-lang/blob/main-2.x/docs/LanguageDocs.md)
 - Examples [`@AvirukBasak/shsc-lang/examples`](https://github.com/AvirukBasak/shsc-lang/tree/main-2.x/examples)
 
+## Features
+- Runs a custom binary in deployment (here, vercel) environment.
+- Uses `bwrap` to sandbox the binary if `bwrap` is present.
+- Else, uses temporary directory. Can be broken through path traversal.
+- Recommended: deployment environment should be an isolated container with no user data present.
+
 ## API
 
 ### POST `/api/v1/script/run?text=[bool:false]`
