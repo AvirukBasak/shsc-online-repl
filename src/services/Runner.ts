@@ -97,8 +97,8 @@ export class Runner {
       // Execute shsc with the code file, pass stdin
       const child = execFile(execFilePath, execFileArgs, (error, stdout, stderr) => {
         // this removes `codeFilePath` from o/p if present, else leaves as is
-        stdout = stdout.replace(`${codeFilePath}`, "code.shsc");
-        stderr = stderr.replace(`${codeFilePath}`, "code.shsc");
+        stdout = stdout.replaceAll(`${codeFilePath}`, "code.shsc");
+        stderr = stderr.replaceAll(`${codeFilePath}`, "code.shsc");
         // if error present (most likely)
         if (error != null) {
           const code = error.code;
