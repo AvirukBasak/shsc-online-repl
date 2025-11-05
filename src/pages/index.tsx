@@ -208,7 +208,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
         <select
           value={language}
           onChange={(e) => handleLanguageChange(e.target.value as Languages)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 border border-gray-600
+          className="flex items-center gap-2 px-3 py-1 bg-gray-700 border border-gray-600
             rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {Object.entries(LanguageTemplates).map(([key, lang]) => (
@@ -223,7 +223,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
         <select
           value={selectedExample}
           onChange={(e) => handleExampleChange(e.target.value)}
-          className="px-3 py-1.5 bg-gray-700 border border-gray-600
+          className="px-3 py-1 bg-gray-700 border border-gray-600
             rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {currentExamples.map((ex) => (
@@ -239,7 +239,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
         {/* Editor Section */}
         <div className="min-[700px]:w-[60%] max-[700px]:h-[60%] flex flex-col border-r border-gray-700">
           {/* Tab Bar */}
-          <div className="flex items-center gap-1 p-1 bg-gray-800 border-b border-gray-700 overflow-x-auto">
+          <div className="flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-auto">
             {tabs.map((tab) => (
               <div
                 key={tab.id}
@@ -285,7 +285,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
                 <div className="flex gap-1">
                   <button
                     onClick={() => setConsoleMode("input")}
-                    className={`flex items-center gap-1 px-3 py-1 cursor-pointer rounded text-sm ${
+                    className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer rounded text-sm ${
                       consoleMode === "input" ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                     }`}
                   >
@@ -295,7 +295,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
 
                   <button
                     onClick={() => setConsoleMode("output")}
-                    className={`flex items-center gap-1 px-3 py-1 cursor-pointer rounded text-sm ${
+                    className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer rounded text-sm ${
                       consoleMode === "output"
                         ? "bg-blue-600 text-white"
                         : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -330,7 +330,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
                 </div>
               </div>
 
-              {/* The console */}
+              {/* stdin */}
               {consoleMode === "input" ? (
                 <textarea
                   value={stdinInput}
@@ -346,11 +346,14 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
                       Executing...
                     </div>
                   ) : output != null ? (
-                    <div className="space-y-2">
+                    <>
+                      {/* exit or error codes */}
                       <div className="mb-3 pb-2 border-b border-gray-700">
                         <span className="text-xs text-gray-500">Exit Code: </span>
                         <span className={output.code === 0 ? "text-green-400" : "text-red-500"}>{output.code}</span>
                       </div>
+
+                      {/* stdout */}
                       {output.stdout != null && output.stdout !== "" && (
                         <div>
                           <div className="text-xs text-gray-500 mb-1">STDOUT:</div>
@@ -359,13 +362,15 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
                           </pre>
                         </div>
                       )}
+
+                      {/* stderr */}
                       {output.stderr != null && output.stderr !== "" && (
                         <div>
                           <div className="text-xs text-gray-500 mb-1">STDERR:</div>
                           <pre className="text-red-300 whitespace-pre-wrap">{output.stderr}</pre>
                         </div>
                       )}
-                    </div>
+                    </>
                   ) : (
                     <div className="text-gray-500">No output yet. Click Run to execute your code.</div>
                   )}
