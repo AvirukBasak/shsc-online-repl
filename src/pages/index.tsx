@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Play, Terminal, FileInput, Loader2 } from "lucide-react";
 import { HeaderTypes, Nullable } from "@/types";
 
@@ -71,9 +71,11 @@ interface StaticProps {
 
 export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
   const [language, setLanguage] = useState<Languages>("SHSC");
+
   const [tabs, setTabs] = useState<Tab[]>([
     { id: 1, name: `main${LanguageTemplates.SHSC.extension}`, content: LanguageTemplates.SHSC.template },
   ]);
+
   const [activeTab, setActiveTab] = useState(1);
   const [consoleMode, setConsoleMode] = useState<"input" | "output">("input");
   const [stdinInput, setStdinInput] = useState("");
@@ -82,6 +84,9 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
   const [editingTabId, setEditingTabId] = useState<Nullable<number>>(null);
   const [editingTabName, setEditingTabName] = useState("");
   const [selectedExample, setSelectedExample] = useState("");
+
+  const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const stdinTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const currentExamples = examples[language];
 
@@ -115,7 +120,52 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
     setTabs(tabs.map((tab) => (tab.id === activeTab ? { ...tab, content } : tab)));
   }
 
-  const addNewTab = () => {
+  function handleTabKeyDown(e: React.KeyboardEvent, ref: React.RefObject<HTMLTextAreaElement | null>) {
+    const TAB_SIZE = 4;
+
+    if (e.key === "Tab" && !e.shiftKey) {
+      if (ref.current == null) return;
+
+      e.preventDefault();
+
+      const value = ref.current.value;
+      const selectionStart = ref.current.selectionStart;
+      const selectionEnd = ref.current.selectionEnd;
+      ref.current.value = value.substring(0, selectionStart) + " ".repeat(TAB_SIZE) + value.substring(selectionEnd);
+      ref.current.selectionStart = selectionEnd + TAB_SIZE - (selectionEnd - selectionStart);
+      ref.current.selectionEnd = selectionEnd + TAB_SIZE - (selectionEnd - selectionStart);
+    }
+
+    if (e.key === "Tab" && e.shiftKey) {
+      if (ref.current == null) return;
+
+      e.preventDefault();
+
+      const value = ref.current.value;
+      const selectionStart = ref.current.selectionStart;
+      const selectionEnd = ref.current.selectionEnd;
+
+      const beforeStart = value.substring(0, selectionStart).split("").reverse().join("");
+      const indexOfTab = beforeStart.indexOf(" ".repeat(TAB_SIZE));
+      const indexOfNewline = beforeStart.indexOf("\n");
+
+      if (indexOfTab !== -1 && indexOfTab < indexOfNewline) {
+        ref.current.value =
+          beforeStart
+            .substring(indexOfTab + TAB_SIZE)
+            .split("")
+            .reverse()
+            .join("") +
+          beforeStart.substring(0, indexOfTab).split("").reverse().join("") +
+          value.substring(selectionEnd);
+
+        ref.current.selectionStart = selectionStart - 2;
+        ref.current.selectionEnd = selectionEnd - TAB_SIZE;
+      }
+    }
+  }
+
+  function addNewTab() {
     const newId = Math.max(...tabs.map((t) => t.id), 0) + 1;
     const newTab = {
       id: newId,
@@ -124,7 +174,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
     };
     setTabs([...tabs, newTab]);
     setActiveTab(newId);
-  };
+  }
 
   function closeTab(id: number) {
     if (tabs.length === 1) return;
@@ -158,7 +208,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
       // });
 
       const body = {
-        stdin: stdinInput,
+        stdin: stdinInput + "\n",
         code: tabs[0]?.content,
       };
 
@@ -268,7 +318,9 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
 
           {/* Code Editor */}
           <textarea
+            ref={codeTextareaRef}
             value={activeTabContent}
+            onKeyDown={(e) => handleTabKeyDown(e, codeTextareaRef)}
             onChange={(e) => handleContentChange(e.target.value)}
             className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
             spellCheck={false}
@@ -334,6 +386,8 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
               {consoleMode === "input" ? (
                 <textarea
                   value={stdinInput}
+                  ref={stdinTextareaRef}
+                  onKeyDown={(e) => handleTabKeyDown(e, stdinTextareaRef)}
                   onChange={(e) => setStdinInput(e.target.value)}
                   className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
                   placeholder="Enter input for your program..."
