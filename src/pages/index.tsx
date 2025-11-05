@@ -3,7 +3,7 @@ import path from "path";
 
 import React, { useState } from "react";
 import { Play, Terminal, FileInput, Loader2 } from "lucide-react";
-import { Nullable } from "@/types";
+import { HeaderTypes, Nullable } from "@/types";
 
 type Languages = "SHSC";
 
@@ -23,7 +23,7 @@ const LanguageTemplates: Record<Languages, Template> = {
   SHSC: {
     name: "Shsc",
     extension: ".shsc",
-    template: 'module main\n\nproc main()\n    io:println("Hello World!")\nend',
+    template: 'module main\n\nproc main()\n    io:println("Hello World!")\nend\n',
   },
 };
 
@@ -141,19 +141,33 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
     setOutput(null);
 
     try {
-      const formData = new FormData();
+      // TODO: multi-file runtime
+      // const formData = new FormData();
 
-      tabs.forEach((tab) => {
-        const blob = new Blob([tab.content], { type: "text/plain" });
-        formData.append("files", blob, tab.name);
-      });
+      // tabs.forEach((tab) => {
+      //   const blob = new Blob([tab.content], { type: "text/plain" });
+      //   formData.append("files", blob, tab.name);
+      // });
 
-      formData.append("stdin", stdinInput);
-      formData.append("language", language);
+      // formData.append("stdin", stdinInput);
+      // formData.append("language", language);
+
+      // const response = await fetch("/api/v1/script/run", {
+      //   method: "POST",
+      //   body: formData,
+      // });
+
+      const body = {
+        stdin: stdinInput,
+        code: tabs[0]?.content,
+      };
 
       const response = await fetch("/api/v1/script/run", {
         method: "POST",
-        body: formData,
+        headers: {
+          [HeaderTypes.CONTENT_TYPE]: "application/json",
+        },
+        body: JSON.stringify(body),
       });
 
       const result: unknown = await response.json();
@@ -194,7 +208,8 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
         <select
           value={language}
           onChange={(e) => handleLanguageChange(e.target.value as Languages)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex items-center gap-2 px-3 py-1.5 bg-gray-700 border border-gray-600
+            rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {Object.entries(LanguageTemplates).map(([key, lang]) => (
             <option key={key} value={key}>
@@ -208,7 +223,8 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
         <select
           value={selectedExample}
           onChange={(e) => handleExampleChange(e.target.value)}
-          className="px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-3 py-1.5 bg-gray-700 border border-gray-600
+            rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {currentExamples.map((ex) => (
             <option key={ex.value} value={ex.value}>
@@ -295,7 +311,9 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
                   <button
                     onClick={() => void handleRun()}
                     disabled={isRunning}
-                    className="flex items-center gap-2 px-4 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded cursor-pointer text-sm font-medium transition-colors"
+                    className="flex items-center gap-2 px-4 py-1.5 bg-green-600 hover:bg-green-700
+                      disabled:bg-gray-600 disabled:cursor-not-allowed rounded cursor-pointer
+                      text-sm font-medium transition-colors"
                   >
                     {isRunning ? (
                       <>
@@ -311,48 +329,47 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
                   </button>
                 </div>
               </div>
+
               {/* The console */}
               {consoleMode === "input" ? (
-                <>
-                  <textarea
-                    value={stdinInput}
-                    onChange={(e) => setStdinInput(e.target.value)}
-                    className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
-                    placeholder="Enter input for your program..."
-                  />
-                </>
+                <textarea
+                  value={stdinInput}
+                  onChange={(e) => setStdinInput(e.target.value)}
+                  className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
+                  placeholder="Enter input for your program..."
+                />
               ) : (
-                <>
-                  <div className="flex-1 overflow-auto p-4 font-mono text-sm">
-                    {isRunning ? (
-                      <div className="flex items-center gap-2 text-gray-400">
-                        <Loader2 size={16} className="animate-spin" />
-                        Executing...
+                <div className="flex-1 overflow-auto p-4 font-mono text-sm">
+                  {isRunning ? (
+                    <div className="flex items-center gap-2 text-gray-400">
+                      <Loader2 size={16} className="animate-spin" />
+                      Executing...
+                    </div>
+                  ) : output != null ? (
+                    <div className="space-y-2">
+                      <div className="mb-3 pb-2 border-b border-gray-700">
+                        <span className="text-xs text-gray-500">Exit Code: </span>
+                        <span className={output.code === 0 ? "text-green-400" : "text-red-500"}>{output.code}</span>
                       </div>
-                    ) : output != null ? (
-                      <div className="space-y-2">
-                        <div className="mb-3 pb-2 border-b border-gray-700">
-                          <span className="text-xs text-gray-500">Exit Code: </span>
-                          <span className={output.code === 0 ? "text-green-400" : "text-red-500"}>{output.code}</span>
+                      {output.stdout != null && output.stdout !== "" && (
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">STDOUT:</div>
+                          <pre className="text-white whitespace-pre-wrap mb-3 pb-2 border-b border-gray-700">
+                            {output.stdout}
+                          </pre>
                         </div>
-                        {output.stdout != null && (
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">STDOUT:</div>
-                            <pre className="text-red-400 whitespace-pre-wrap">{output.stdout}</pre>
-                          </div>
-                        )}
-                        {output.stderr != null && (
-                          <div>
-                            <div className="text-xs text-gray-500 mb-1">STDERR:</div>
-                            <pre className="text-red-300 whitespace-pre-wrap">{output.stderr}</pre>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-gray-500">No output yet. Click Run to execute your code.</div>
-                    )}
-                  </div>
-                </>
+                      )}
+                      {output.stderr != null && output.stderr !== "" && (
+                        <div>
+                          <div className="text-xs text-gray-500 mb-1">STDERR:</div>
+                          <pre className="text-red-300 whitespace-pre-wrap">{output.stderr}</pre>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-gray-500">No output yet. Click Run to execute your code.</div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -369,7 +386,8 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
               value={editingTabName}
               onChange={(e) => setEditingTabName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleTabNameChange()}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600
+                rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
             <div className="flex gap-2 mt-4">

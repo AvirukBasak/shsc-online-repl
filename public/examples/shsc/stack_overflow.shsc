@@ -1,0 +1,8 @@
+proc die()
+    die()
+end
+
+proc main start
+    io:println("Hello, World!")
+    die()
+end
