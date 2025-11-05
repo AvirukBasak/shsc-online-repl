@@ -1,91 +1,30 @@
+import fs from "fs";
+import path from "path";
+
 import React, { useState } from "react";
 import { Play, Terminal, FileInput, Loader2 } from "lucide-react";
 import { Nullable } from "@/types";
 
-const LanguageTemplates = {
-  C: {
-    name: "C",
-    extension: ".c",
-    template: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
-  },
-  CPP: {
-    name: "C++",
-    extension: ".cpp",
-    template: '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}',
-  },
-  PYTHON: { name: "Python", extension: ".py", template: '# Write your code here\nprint("Hello, World!")' },
-  JAVA: {
-    name: "Java",
-    extension: ".java",
-    template:
-      'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}',
-  },
-  TYPESCRIPT: { name: "TypeScript", extension: ".ts", template: 'console.log("Hello, World!");' },
-};
+type Languages = "SHSC";
 
-const Examples = {
-  PYTHON: [
-    { value: "", label: "Select Example..." },
-    { value: "hello", label: "Hello World", code: 'print("Hello, World!")\nprint("Welcome to the code editor!")' },
-    {
-      value: "factorial",
-      label: "Factorial",
-      code: "def factorial(n):\n    if n <= 1:\n        return 1\n    return n * factorial(n-1)\n\nprint(factorial(5))",
-    },
-    {
-      value: "fibonacci",
-      label: "Fibonacci",
-      code: "def fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n        print(a)\n        a, b = b, a + b\n\nfib(10)",
-    },
-  ],
-  C: [
-    { value: "", label: "Select Example..." },
-    {
-      value: "hello",
-      label: "Hello World",
-      code: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
-    },
-    {
-      value: "factorial",
-      label: "Factorial",
-      code: '#include <stdio.h>\n\nint factorial(int n) {\n    if (n <= 1) return 1;\n    return n * factorial(n-1);\n}\n\nint main() {\n    printf("%d\\n", factorial(5));\n    return 0;\n}',
-    },
-  ],
-  CPP: [
-    { value: "", label: "Select Example..." },
-    {
-      value: "hello",
-      label: "Hello World",
-      code: '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}',
-    },
-    {
-      value: "vector",
-      label: "Vector Demo",
-      code: '#include <iostream>\n#include <vector>\n\nint main() {\n    std::vector<int> v = {1, 2, 3, 4, 5};\n    for(int i : v) {\n        std::cout << i << " ";\n    }\n    return 0;\n}',
-    },
-  ],
-  JAVA: [
-    { value: "", label: "Select Example..." },
-    {
-      value: "hello",
-      label: "Hello World",
-      code: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}',
-    },
-    {
-      value: "array",
-      label: "Array Demo",
-      code: "public class Main {\n    public static void main(String[] args) {\n        int[] arr = {1, 2, 3, 4, 5};\n        for(int i : arr) {\n            System.out.println(i);\n        }\n    }\n}",
-    },
-  ],
-  TYPESCRIPT: [
-    { value: "", label: "Select Example..." },
-    { value: "hello", label: "Hello World", code: 'console.log("Hello, World!");' },
-    {
-      value: "function",
-      label: "Function Demo",
-      code: 'function greet(name: string): string {\n    return `Hello, ${name}!`;\n}\n\nconsole.log(greet("World"));',
-    },
-  ],
+interface Template {
+  name: string;
+  extension: string;
+  template: string;
+}
+
+interface Example {
+  value: string;
+  label: string;
+  code?: string;
+}
+
+const LanguageTemplates: Record<Languages, Template> = {
+  SHSC: {
+    name: "Shsc",
+    extension: ".shsc",
+    template: 'module main\n\nproc main()\n    io:println("Hello World!")\nend',
+  },
 };
 
 interface Tab {
@@ -100,12 +39,40 @@ interface ExecResult {
   stderr?: Nullable<string>;
 }
 
-type Languages = keyof typeof LanguageTemplates;
+export function getStaticProps(): { props: StaticProps } {
+  const shscDir = path.join(process.cwd(), "public", "examples", "shsc");
+  const files = fs.readdirSync(shscDir).filter((f: string) => f.endsWith(".shsc"));
 
-export default function CodeEditor(): React.ReactNode {
-  const [language, setLanguage] = useState<Languages>("PYTHON");
+  const examplesList = files.map<Example>((file: string) => {
+    const value = file.replace(/\.shsc$/, "");
+    const code = fs.readFileSync(path.join(shscDir, file), "utf8");
+    const label = value
+      .split("_")
+      .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    return { value, label, code };
+  });
+
+  const defaultSelection = { value: "", label: "Select Example...", code: "" };
+
+  return {
+    props: {
+      examples: {
+        SHSC: [defaultSelection, ...examplesList],
+      },
+    },
+  };
+}
+
+interface StaticProps {
+  examples: Record<Languages, Example[]>;
+}
+
+export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
+  const [language, setLanguage] = useState<Languages>("SHSC");
   const [tabs, setTabs] = useState<Tab[]>([
-    { id: 1, name: `main${LanguageTemplates.PYTHON.extension}`, content: LanguageTemplates.PYTHON.template },
+    { id: 1, name: `main${LanguageTemplates.SHSC.extension}`, content: LanguageTemplates.SHSC.template },
   ]);
   const [activeTab, setActiveTab] = useState(1);
   const [consoleMode, setConsoleMode] = useState<"input" | "output">("input");
@@ -116,7 +83,7 @@ export default function CodeEditor(): React.ReactNode {
   const [editingTabName, setEditingTabName] = useState("");
   const [selectedExample, setSelectedExample] = useState("");
 
-  const currentExamples = Examples[language];
+  const currentExamples = examples[language];
 
   function handleLanguageChange(newLang: Languages) {
     setLanguage(newLang);
@@ -205,7 +172,7 @@ export default function CodeEditor(): React.ReactNode {
 
   function handleExampleChange(value: string) {
     setSelectedExample(value);
-    const example = currentExamples.find((ex) => ex.value === value);
+    const example = currentExamples.find((ex: { value: string }) => ex.value === value);
     if (example != null && example.code != null) {
       setTabs([
         {

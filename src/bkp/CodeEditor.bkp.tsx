@@ -2,7 +2,33 @@ import React, { useState } from "react";
 import { Play, Terminal, FileInput, Loader2 } from "lucide-react";
 import { Nullable } from "@/types";
 
-const LanguageTemplates = {
+type Languages = "PYTHON" | "C" | "CPP" | "JAVA" | "TYPESCRIPT";
+
+interface Template {
+  name: string;
+  extension: string;
+  template: string;
+}
+
+interface Example {
+  value: string;
+  label: string;
+  code?: string;
+}
+
+interface Tab {
+  id: number;
+  name: string;
+  content: string;
+}
+
+interface ExecResult {
+  code?: Nullable<string | number>;
+  stdout?: Nullable<string>;
+  stderr?: Nullable<string>;
+}
+
+const LanguageTemplates: Record<Languages, Template> = {
   C: {
     name: "C",
     extension: ".c",
@@ -23,7 +49,7 @@ const LanguageTemplates = {
   TYPESCRIPT: { name: "TypeScript", extension: ".ts", template: 'console.log("Hello, World!");' },
 };
 
-const Examples = {
+const LanguageExamples: Record<Languages, Example[]> = {
   PYTHON: [
     { value: "", label: "Select Example..." },
     { value: "hello", label: "Hello World", code: 'print("Hello, World!")\nprint("Welcome to the code editor!")' },
@@ -88,20 +114,6 @@ const Examples = {
   ],
 };
 
-interface Tab {
-  id: number;
-  name: string;
-  content: string;
-}
-
-interface ExecResult {
-  code?: Nullable<string | number>;
-  stdout?: Nullable<string>;
-  stderr?: Nullable<string>;
-}
-
-type Languages = keyof typeof LanguageTemplates;
-
 export default function CodeEditor(): React.ReactNode {
   const [language, setLanguage] = useState<Languages>("PYTHON");
   const [tabs, setTabs] = useState<Tab[]>([
@@ -116,7 +128,7 @@ export default function CodeEditor(): React.ReactNode {
   const [editingTabName, setEditingTabName] = useState("");
   const [selectedExample, setSelectedExample] = useState("");
 
-  const currentExamples = Examples[language];
+  const currentExamples = LanguageExamples[language];
 
   function handleLanguageChange(newLang: Languages) {
     setLanguage(newLang);

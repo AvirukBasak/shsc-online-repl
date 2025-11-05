@@ -1,0 +1,36 @@
+proc check_and_logic()
+    var i = 2
+    var arr = ['a', 'b', 'c', 'd']
+    if i >= 0 && i < it:len(arr) && arr[i] != 0 then
+        io:print("value is:", arr[i], lf)
+    else
+        io:print("value is invalid", lf)
+    end
+end
+
+proc check_and_ckt()
+    var cond = false
+    cond && io:print("cond is true", lf)
+    !cond && io:print("cond is false", lf)
+end
+
+proc check_or_ckt()
+    var x = null
+    var y = x || "default value"
+    var z = y + " and more" || "z val"
+    io:print(x, lf, y, lf, z, lf)
+end
+
+proc check_ternary_ckt()
+    var cond1 = true
+    var cond2 = false
+    io:print("cond1 is true", lf) if cond1 else io:print("cond1 is false", lf)
+    io:print("cond2 is true", lf) if cond2 else io:print("cond2 is false", lf)
+end
+
+proc main start
+    check_and_logic()
+    check_and_ckt()
+    check_or_ckt()
+    check_ternary_ckt()
+end
