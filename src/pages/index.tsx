@@ -254,11 +254,11 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
       {/* Top Bar */}
-      <div className="flex items-center gap-2 p-2 bg-gray-800 border-b border-gray-700">
+      <div className="TopBar flex items-center gap-2 p-2 bg-gray-800 border-b border-gray-700">
         <select
           value={language}
           onChange={(e) => handleLanguageChange(e.target.value as Languages)}
-          className="flex items-center gap-2 px-3 py-1 bg-gray-700 border border-gray-600
+          className="LanguageSelector flex items-center gap-2 px-3 py-1 bg-gray-700 border border-gray-600
             rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {Object.entries(LanguageTemplates).map(([key, lang]) => (
@@ -273,7 +273,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
         <select
           value={selectedExample}
           onChange={(e) => handleExampleChange(e.target.value)}
-          className="px-3 py-1 bg-gray-700 border border-gray-600
+          className="ExampleSelector px-3 py-1 bg-gray-700 border border-gray-600
             rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {currentExamples.map((ex) => (
@@ -285,11 +285,11 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-row max-[700px]:flex-col overflow-hidden">
+      <div className="Main-Container flex-1 flex flex-row max-[700px]:flex-col overflow-hidden">
         {/* Editor Section */}
-        <div className="min-[700px]:w-[60%] max-[700px]:h-[60%] flex flex-col border-r border-gray-700">
+        <div className="Editor-Container min-[700px]:w-[60%] max-[700px]:h-[60%] flex flex-col border-r border-gray-700">
           {/* Tab Bar */}
-          <div className="flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-auto">
+          <div className="Editor-TabBar flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-auto">
             {tabs.map((tab) => (
               <div
                 key={tab.id}
@@ -322,145 +322,137 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
             value={activeTabContent}
             onKeyDown={(e) => handleTabKeyDown(e, codeTextareaRef)}
             onChange={(e) => handleContentChange(e.target.value)}
-            className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
+            className="Editor-Textarea flex-1 p-4 bg-gray-900 text-gray-100 whitespace-nowrap font-mono text-sm resize-none focus:outline-none"
             spellCheck={false}
             placeholder="Write your code here..."
           />
         </div>
 
         {/* Console Section */}
-        <div className="min-[700px]:w-[40%] max-[700px]:h-[40%] flex flex-col bg-gray-900">
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 flex flex-col">
-              {/* Input and Output switcher buttons */}
-              <div className="p-2 bg-gray-800 border-b border-gray-700 text-sm font-medium">
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setConsoleMode("input")}
-                    className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer rounded text-sm ${
-                      consoleMode === "input" ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
-                  >
-                    <FileInput size={16} />
-                    Input
-                  </button>
+        <div className="Console-Container min-[700px]:w-[40%] max-[700px]:h-[40%] flex flex-col bg-gray-900">
+          {/* Input and Output switcher buttons */}
+          <div className="Button-Container flex gap-1 p-2 bg-gray-800 border-b border-gray-700 text-sm font-medium">
+            <button
+              onClick={() => setConsoleMode("input")}
+              className={`Button-ShowInput flex items-center gap-1 px-3 py-1.5 cursor-pointer rounded text-sm ${
+                consoleMode === "input" ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              <FileInput size={16} />
+              Input
+            </button>
 
-                  <button
-                    onClick={() => setConsoleMode("output")}
-                    className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer rounded text-sm ${
-                      consoleMode === "output"
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    }`}
-                  >
-                    <Terminal size={16} />
-                    Output
-                  </button>
+            <button
+              onClick={() => setConsoleMode("output")}
+              className={`Button-ShowOutput flex items-center gap-1 px-3 py-1.5 cursor-pointer rounded text-sm ${
+                consoleMode === "output" ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+              }`}
+            >
+              <Terminal size={16} />
+              Output
+            </button>
 
-                  <div className="flex-1" />
+            <div className="Seperator-Flex1 flex-1" />
 
-                  {/* Run Button */}
-                  <button
-                    onClick={() => void handleRun()}
-                    disabled={isRunning}
-                    className="flex items-center gap-2 px-4 py-1.5 bg-green-600 hover:bg-green-700
+            {/* Run Button */}
+            <button
+              onClick={() => void handleRun()}
+              disabled={isRunning}
+              className="Button-Run flex items-center gap-2 px-4 py-1.5 bg-green-600 hover:bg-green-700
                       disabled:bg-gray-600 disabled:cursor-not-allowed rounded cursor-pointer
                       text-sm font-medium transition-colors"
-                  >
-                    {isRunning ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Running...
-                      </>
-                    ) : (
-                      <>
-                        <Play size={16} />
-                        Run
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* stdin */}
-              {consoleMode === "input" ? (
-                <textarea
-                  value={stdinInput}
-                  ref={stdinTextareaRef}
-                  onKeyDown={(e) => handleTabKeyDown(e, stdinTextareaRef)}
-                  onChange={(e) => setStdinInput(e.target.value)}
-                  className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none focus:outline-none"
-                  placeholder="Enter input for your program..."
-                />
+            >
+              {isRunning ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Running...
+                </>
               ) : (
-                <div className="flex-1 overflow-auto p-4 font-mono text-sm">
-                  {isRunning ? (
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Loader2 size={16} className="animate-spin" />
-                      Executing...
-                    </div>
-                  ) : output != null ? (
-                    <>
-                      {/* exit or error codes */}
-                      <div className="mb-3 pb-2 border-b border-gray-700">
-                        <span className="text-xs text-gray-500">Exit Code: </span>
-                        <span className={output.code === 0 ? "text-green-400" : "text-red-500"}>{output.code}</span>
-                      </div>
+                <>
+                  <Play size={16} />
+                  Run
+                </>
+              )}
+            </button>
+          </div>
 
-                      {/* stdout */}
-                      {output.stdout != null && output.stdout !== "" && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">STDOUT:</div>
-                          <pre className="text-white whitespace-pre-wrap mb-3 pb-2 border-b border-gray-700">
-                            {output.stdout}
-                          </pre>
-                        </div>
-                      )}
-
-                      {/* stderr */}
-                      {output.stderr != null && output.stderr !== "" && (
-                        <div>
-                          <div className="text-xs text-gray-500 mb-1">STDERR:</div>
-                          <pre className="text-red-300 whitespace-pre-wrap">{output.stderr}</pre>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-gray-500">No output yet. Click Run to execute your code.</div>
-                  )}
+          {/* stdin */}
+          {consoleMode === "input" ? (
+            <textarea
+              value={stdinInput}
+              ref={stdinTextareaRef}
+              onKeyDown={(e) => handleTabKeyDown(e, stdinTextareaRef)}
+              onChange={(e) => setStdinInput(e.target.value)}
+              className="Input-StdIn flex-1 p-4 bg-gray-900 text-gray-100 whitespace-nowrap font-mono text-sm resize-none focus:outline-none"
+              placeholder="Enter input for your program..."
+            />
+          ) : (
+            <div className="Output-Container flex-1 overflow-auto p-4 font-mono text-sm">
+              {isRunning ? (
+                <div className="Output-Loading flex items-center gap-2 text-gray-400">
+                  <Loader2 size={16} className="animate-spin" />
+                  Executing...
                 </div>
+              ) : output != null ? (
+                <>
+                  {/* exit or error codes */}
+                  <div className="Output-ExitCode mb-3 pb-2 border-b border-gray-700">
+                    <span className="text-xs text-gray-500">Exit Code: </span>
+                    <span className={output.code === 0 ? "text-green-400" : "text-red-500"}>{output.code}</span>
+                  </div>
+
+                  {/* stdout */}
+                  {output.stdout != null && output.stdout !== "" && (
+                    <div className="Output-StdOut">
+                      <div className="text-xs text-gray-500 mb-1">STDOUT:</div>
+                      <pre className="text-white whitespace-pre-wrap mb-3 pb-2 border-b border-gray-700">
+                        {output.stdout}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* stderr */}
+                  {output.stderr != null && output.stderr !== "" && (
+                    <div className="Output-StdErr">
+                      <div className="text-xs text-gray-500 mb-1">STDERR:</div>
+                      <pre className="text-red-300 whitespace-pre-wrap">{output.stderr}</pre>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="Output-NoOutputInfo text-gray-500">No output yet. Click Run to execute your code.</div>
               )}
             </div>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Tab Name Edit Modal */}
       {editingTabId != null && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-xl w-80">
-            <h3 className="text-lg font-medium mb-4 select-none">Rename Tab</h3>
+        <div className="Dialog-Bg fixed inset-0 bg-[#101828aa] flex items-center justify-center z-50">
+          <div className="Dialog-Modal bg-gray-800 p-6 rounded-lg shadow-xl w-80">
+            <h3 className="H3-TabNameDialog text-lg font-medium mb-4 select-none">Rename Tab</h3>
             <input
               type="text"
               value={editingTabName}
               onChange={(e) => setEditingTabName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleTabNameChange()}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600
+              className="Input-TabName w-full px-3 py-2 bg-gray-700 border border-gray-600
                 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={handleTabNameChange}
-                className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded cursor-pointer"
-              >
-                Save
-              </button>
+            <div className="Buttons-Container flex gap-2 mt-4">
               <button
                 onClick={() => setEditingTabId(null)}
-                className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded cursor-pointer"
+                className="Button-Cancel flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded cursor-pointer"
               >
                 Cancel
+              </button>
+              <button
+                onClick={handleTabNameChange}
+                className="Button-Save flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded cursor-pointer"
+              >
+                Save
               </button>
             </div>
           </div>
