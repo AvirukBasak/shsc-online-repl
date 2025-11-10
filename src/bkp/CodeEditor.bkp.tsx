@@ -374,8 +374,22 @@ export default function CodeEditor(): React.ReactNode {
           <div
             ref={tabContainerDivRef}
             onWheel={handleTabScroll}
-            className="Editor-TabBar flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-hidden"
+            className="Editor-TabBar flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-auto no-scrollbar"
           >
+            {/*
+              // Chrome, Safari and Opera
+              .no-scrollbar::-webkit-scrollbar {
+                display: none;
+              }     
+              // IE and Edge
+              .no-scrollbar {
+                -ms-overflow-style: none;
+              }
+              // Firefox
+              .no-scrollbar {
+                scrollbar-width: none;
+              }
+            */}
             {tabs.map((tab) => (
               <div
                 key={tab.id}
