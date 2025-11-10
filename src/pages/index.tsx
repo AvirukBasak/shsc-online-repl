@@ -344,7 +344,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
           <div
             ref={tabContainerDivRef}
             onWheel={handleTabScroll}
-            className="Editor-TabBar flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-hidden"
+            className="Editor-TabBar flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-auto no-scrollbar"
           >
             {tabs.map((tab) => (
               <div
