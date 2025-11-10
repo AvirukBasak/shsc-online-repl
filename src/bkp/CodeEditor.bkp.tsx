@@ -116,10 +116,23 @@ const LanguageExamples: Record<Languages, Example[]> = {
 
 export default function CodeEditor(): React.ReactNode {
   const [language, setLanguage] = useState<Languages>("PYTHON");
+
   const [tabs, setTabs] = useState<Tab[]>([
     { id: 1, name: `main${LanguageTemplates.PYTHON.extension}`, content: LanguageTemplates.PYTHON.template },
   ]);
-  const [activeTab, setActiveTab] = useState(1);
+  const DOM_DIRECT_UPDATE_DELAY_MS = 100;
+
+  const [activeTab, _setActiveTab] = useState(1);
+  function setActiveTab(valueOrFn: number | ((oldValue: number) => number)): void {
+    if (valueOrFn instanceof Function) {
+      _setActiveTab(valueOrFn);
+    } else {
+      _setActiveTab(valueOrFn);
+    }
+    // a quick-and-dirty way to resize the editor textarea if value is updated programatically
+    setTimeout(() => textareaAutoResize(editorTextareaRef, editorLineNoDivRef), DOM_DIRECT_UPDATE_DELAY_MS);
+  }
+
   const [consoleMode, setConsoleMode] = useState<"input" | "output">("input");
   const [stdinInput, setStdinInput] = useState("");
   const [output, setOutput] = useState<Nullable<ExecResult>>(null);
@@ -128,10 +141,22 @@ export default function CodeEditor(): React.ReactNode {
   const [editingTabName, setEditingTabName] = useState("");
   const [selectedExample, setSelectedExample] = useState("");
 
-  const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const activeTabContent = tabs.find((t) => t.id === activeTab)?.content ?? "";
+
+  const editorTextareaRef = useRef<HTMLTextAreaElement>(null);
   const stdinTextareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const editorLineNoDivRef = useRef<HTMLDivElement>(null);
+  const tabContainerDivRef = useRef<HTMLDivElement>(null);
+
   const currentExamples = LanguageExamples[language];
+
+  function handleTabScroll(e: React.WheelEvent<HTMLDivElement>) {
+    e.preventDefault();
+    if (tabContainerDivRef.current == null) return;
+    const scrollPos = tabContainerDivRef.current.scrollLeft + e.deltaY;
+    tabContainerDivRef.current.scrollTo({ left: scrollPos, behavior: "smooth" });
+  }
 
   function handleLanguageChange(newLang: Languages) {
     setLanguage(newLang);
@@ -208,6 +233,26 @@ export default function CodeEditor(): React.ReactNode {
     }
   }
 
+  function textareaAutoResize(
+    refEditor: React.RefObject<HTMLTextAreaElement | null>,
+    refLineNo: React.RefObject<HTMLDivElement | null>
+  ) {
+    if (refEditor.current == null) return;
+
+    refEditor.current.style.width = "auto";
+    refEditor.current.style.height = "auto";
+
+    const scrollWidth = refEditor.current.scrollWidth + "px";
+    const scrollHeight = refEditor.current.scrollHeight + "px";
+
+    refEditor.current.style.width = scrollWidth;
+    refEditor.current.style.height = scrollHeight;
+
+    // set height to scrollHeight (plus a tiny buffer if you want)
+    if (refLineNo.current == null) return;
+    refLineNo.current.style.height = scrollHeight;
+  }
+
   function addNewTab() {
     const newId = Math.max(...tabs.map((t) => t.id), 0) + 1;
     const newTab = {
@@ -217,6 +262,13 @@ export default function CodeEditor(): React.ReactNode {
     };
     setTabs([...tabs, newTab]);
     setActiveTab(newId);
+
+    // a quick-and-dirty way to scroll tab bar to right-most end on add button click
+    if (tabContainerDivRef.current == null) return;
+    setTimeout(() => {
+      if (tabContainerDivRef.current == null) return;
+      tabContainerDivRef.current.scrollTo({ left: tabContainerDivRef.current.scrollWidth, behavior: "smooth" });
+    }, DOM_DIRECT_UPDATE_DELAY_MS);
   }
 
   function closeTab(id: number) {
@@ -265,7 +317,7 @@ export default function CodeEditor(): React.ReactNode {
 
   function handleExampleChange(value: string) {
     setSelectedExample(value);
-    const example = currentExamples.find((ex) => ex.value === value);
+    const example = currentExamples.find((ex: { value: string }) => ex.value === value);
     if (example != null && example.code != null) {
       setTabs([
         {
@@ -276,9 +328,9 @@ export default function CodeEditor(): React.ReactNode {
       ]);
       setActiveTab(1);
     }
+    // a quick-and-dirty way to resize the editor textarea if value is updated programatically
+    setTimeout(() => textareaAutoResize(editorTextareaRef, editorLineNoDivRef), DOM_DIRECT_UPDATE_DELAY_MS);
   }
-
-  const activeTabContent = tabs.find((t) => t.id === activeTab)?.content ?? "";
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
@@ -288,7 +340,7 @@ export default function CodeEditor(): React.ReactNode {
           value={language}
           onChange={(e) => handleLanguageChange(e.target.value as Languages)}
           className="LanguageSelector flex items-center gap-2 px-3 py-1 bg-gray-700 border border-gray-600
-            rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {Object.entries(LanguageTemplates).map(([key, lang]) => (
             <option key={key} value={key}>
@@ -303,7 +355,7 @@ export default function CodeEditor(): React.ReactNode {
           value={selectedExample}
           onChange={(e) => handleExampleChange(e.target.value)}
           className="ExampleSelector px-3 py-1 bg-gray-700 border border-gray-600
-            rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           {currentExamples.map((ex) => (
             <option key={ex.value} value={ex.value}>
@@ -318,43 +370,57 @@ export default function CodeEditor(): React.ReactNode {
         {/* Editor Section */}
         <div className="Editor-Container min-[700px]:w-[60%] max-[700px]:h-[60%] flex flex-col border-r border-gray-700">
           {/* Tab Bar */}
-          <div className="Editor-TabBar flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-auto">
+          <div
+            ref={tabContainerDivRef}
+            onWheel={handleTabScroll}
+            className="Editor-TabBar flex items-center gap-1 p-1.5 bg-gray-800 border-b border-gray-700 overflow-x-hidden"
+          >
             {tabs.map((tab) => (
               <div
                 key={tab.id}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm select-none ${
-                  activeTab === tab.id ? "bg-gray-900 text-white" : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  activeTab !== tab.id
+                    ? "bg-gray-900 hover:bg-gray-950 text-gray-500 cursor-pointer"
+                    : "bg-gray-700 text-white py-1.75"
                 }`}
               >
-                <span
-                  onDoubleClick={() => handleTabDoubleClick(tab)}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="cursor-pointer"
-                >
+                <span onDoubleClick={() => handleTabDoubleClick(tab)} onClick={() => setActiveTab(tab.id)}>
                   {tab.name}
                 </span>
                 {tabs.length > 1 && (
                   <button onClick={() => closeTab(tab.id)} className="text-gray-400 hover:text-white">
-                    ×
+                    {"\u00d7" /* Unicode For: × */}
                   </button>
                 )}
               </div>
             ))}
-            <button onClick={addNewTab} className="px-2 py-1 text-gray-400 hover:text-white text-lg">
-              +
+            <button onClick={addNewTab} className="px-2 py-1 text-lg">
+              <span className="text-gray-400 hover:text-white cursor-pointer">+</span>
             </button>
           </div>
 
           {/* Code Editor */}
-          <textarea
-            ref={codeTextareaRef}
-            value={activeTabContent}
-            onKeyDown={(e) => handleTabKeyDown(e, codeTextareaRef)}
-            onChange={(e) => handleContentChange(e.target.value)}
-            className="Editor-Textarea flex-1 p-4 bg-gray-900 text-gray-100 whitespace-nowrap font-mono text-sm resize-none focus:outline-none"
-            spellCheck={false}
-            placeholder="Write your code here..."
-          />
+          <div className="Editor flex-1 flex flex-row overflow-auto">
+            <div
+              ref={editorLineNoDivRef}
+              className="Editor-LineNo p-4 pr-2 flex flex-col bg-black-900 font-mono text-sm text-gray-400"
+            >
+              {activeTabContent.split("\n").map((_, idx) => (
+                <span key={idx}>{idx + 1}</span>
+              ))}
+            </div>
+            <textarea
+              ref={editorTextareaRef}
+              value={activeTabContent}
+              onKeyDown={(e) => handleTabKeyDown(e, editorTextareaRef)}
+              onChange={(e) => handleContentChange(e.target.value)}
+              onInput={() => textareaAutoResize(editorTextareaRef, editorLineNoDivRef)}
+              className="Editor-Textarea flex-1 p-4 pl-0 bg-black-900 text-gray-100 whitespace-nowrap
+                  font-mono text-sm resize-none focus:outline-none overflow-y-hidden"
+              spellCheck={false}
+              placeholder="Write your code here..."
+            />
+          </div>
         </div>
 
         {/* Console Section */}
@@ -388,8 +454,8 @@ export default function CodeEditor(): React.ReactNode {
               onClick={() => void handleRun()}
               disabled={isRunning}
               className="Button-Run flex items-center gap-2 px-4 py-1.5 bg-green-600 hover:bg-green-700
-                      disabled:bg-gray-600 disabled:cursor-not-allowed rounded cursor-pointer
-                      text-sm font-medium transition-colors"
+                        disabled:bg-gray-600 disabled:cursor-not-allowed rounded cursor-pointer
+                        text-sm font-medium transition-colors"
             >
               {isRunning ? (
                 <>
@@ -412,7 +478,8 @@ export default function CodeEditor(): React.ReactNode {
               ref={stdinTextareaRef}
               onKeyDown={(e) => handleTabKeyDown(e, stdinTextareaRef)}
               onChange={(e) => setStdinInput(e.target.value)}
-              className="Input-StdIn flex-1 p-4 bg-gray-900 text-gray-100 whitespace-nowrap font-mono text-sm resize-none focus:outline-none"
+              className="Input-StdIn flex-1 p-4 bg-gray-900 text-gray-100 whitespace-nowrap
+                  font-mono text-sm resize-none focus:outline-none"
               placeholder="Enter input for your program..."
             />
           ) : (
@@ -467,7 +534,7 @@ export default function CodeEditor(): React.ReactNode {
               onChange={(e) => setEditingTabName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleTabNameChange()}
               className="Input-TabName w-full px-3 py-2 bg-gray-700 border border-gray-600
-                rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
             <div className="Buttons-Container flex gap-2 mt-4">

@@ -376,7 +376,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
               className="Editor-LineNo p-4 pr-2 flex flex-col bg-black-900 font-mono text-sm text-gray-400"
             >
               {activeTabContent.split("\n").map((_, idx) => (
-                <span>{idx + 1}</span>
+                <span key={idx}>{idx + 1}</span>
               ))}
             </div>
             <textarea
