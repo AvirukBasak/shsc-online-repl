@@ -152,7 +152,8 @@ export default function CodeEditor(): React.ReactNode {
   const currentExamples = LanguageExamples[language];
 
   function handleTabScroll(e: React.WheelEvent<HTMLDivElement>) {
-    e.preventDefault();
+    // apparently this is a passive event listener
+    // e.preventDefault();
     if (tabContainerDivRef.current == null) return;
     const scrollPos = tabContainerDivRef.current.scrollLeft + e.deltaY;
     tabContainerDivRef.current.scrollTo({ left: scrollPos, behavior: "smooth" });
