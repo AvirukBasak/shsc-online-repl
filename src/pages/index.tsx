@@ -306,7 +306,7 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
                 </span>
                 {tabs.length > 1 && (
                   <button onClick={() => closeTab(tab.id)} className="text-gray-400 hover:text-white">
-                    ×
+                    {"\u00d7" /* Unicode For: × */}
                   </button>
                 )}
               </div>
