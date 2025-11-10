@@ -85,8 +85,13 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
   const [editingTabName, setEditingTabName] = useState("");
   const [selectedExample, setSelectedExample] = useState("");
 
-  const codeTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const activeTabContent = tabs.find((t) => t.id === activeTab)?.content ?? "";
+
+  const editorTextareaRef = useRef<HTMLTextAreaElement>(null);
   const stdinTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const editorLineNoDivRef = useRef<HTMLDivElement>(null);
+  // const stdinLineNoDivRef = useRef<HTMLDivElement>(null);
 
   const currentExamples = examples[language];
 
@@ -163,6 +168,26 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
         ref.current.selectionEnd = selectionEnd - TAB_SIZE;
       }
     }
+  }
+
+  function textareaAutoResize(
+    refEditor: React.RefObject<HTMLTextAreaElement | null>,
+    refLineNo: React.RefObject<HTMLDivElement | null>
+  ) {
+    if (refEditor.current == null) return;
+
+    refEditor.current.style.width = "auto";
+    refEditor.current.style.height = "auto";
+
+    const scrollWidth = refEditor.current.scrollWidth + "px";
+    const scrollHeight = refEditor.current.scrollHeight + "px";
+
+    refEditor.current.style.width = scrollWidth;
+    refEditor.current.style.height = scrollHeight;
+
+    // set height to scrollHeight (plus a tiny buffer if you want)
+    if (refLineNo.current == null) return;
+    refLineNo.current.style.height = scrollHeight;
   }
 
   function addNewTab() {
@@ -247,9 +272,9 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
       ]);
       setActiveTab(1);
     }
+    // a quick-and-dirty way to resize the editor textarea if value is updated programatically
+    setTimeout(() => textareaAutoResize(editorTextareaRef, editorLineNoDivRef), 50);
   }
-
-  const activeTabContent = tabs.find((t) => t.id === activeTab)?.content ?? "";
 
   return (
     <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
@@ -317,15 +342,27 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
           </div>
 
           {/* Code Editor */}
-          <textarea
-            ref={codeTextareaRef}
-            value={activeTabContent}
-            onKeyDown={(e) => handleTabKeyDown(e, codeTextareaRef)}
-            onChange={(e) => handleContentChange(e.target.value)}
-            className="Editor-Textarea flex-1 p-4 bg-gray-900 text-gray-100 whitespace-nowrap font-mono text-sm resize-none focus:outline-none"
-            spellCheck={false}
-            placeholder="Write your code here..."
-          />
+          <div className="Editor flex-1 flex flex-row overflow-auto">
+            <div
+              ref={editorLineNoDivRef}
+              className="Editor-LineNo p-4 pr-2 flex flex-col bg-black-900 font-mono text-sm text-gray-400"
+            >
+              {activeTabContent.split("\n").map((_, idx) => (
+                <span>{idx + 1}</span>
+              ))}
+            </div>
+            <textarea
+              ref={editorTextareaRef}
+              value={activeTabContent}
+              onKeyDown={(e) => handleTabKeyDown(e, editorTextareaRef)}
+              onChange={(e) => handleContentChange(e.target.value)}
+              onInput={() => textareaAutoResize(editorTextareaRef, editorLineNoDivRef)}
+              className="Editor-Textarea flex-1 p-4 pl-0 bg-black-900 text-gray-100 whitespace-nowrap
+                font-mono text-sm resize-none focus:outline-none overflow-y-hidden"
+              spellCheck={false}
+              placeholder="Write your code here..."
+            />
+          </div>
         </div>
 
         {/* Console Section */}
