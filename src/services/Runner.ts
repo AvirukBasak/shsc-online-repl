@@ -58,8 +58,11 @@ export class Runner {
 
   readonly env: EnvSetup;
 
+  readonly cwd: string;
+
   private constructor(uid: string) {
     this.env = EnvSetup.create(uid);
+    this.cwd = process.cwd();
   }
 
   destroy(): void {
@@ -86,6 +89,9 @@ export class Runner {
     if (bwrapPath == null) {
       // bwrap absent: run without bwrap (unsafe)
       console.warn("[W] Runner: bwrap not found");
+      // cd into code directory - keeps env similar to bwrap
+      process.chdir(path.dirname(codeFilePath));
+      // setup args
       execFilePath = Runner.TmpBinPath;
       execFileArgs = [codeFilePath];
     } else {
@@ -93,7 +99,7 @@ export class Runner {
       execFileArgs = this.getBwrapArgs();
     }
 
-    const result = await new Promise<ExecResult>((resolve, reject) => {
+    const resultPromise = new Promise<ExecResult>((resolve, reject) => {
       // Execute shsc with the code file, pass stdin
       const child = execFile(execFilePath, execFileArgs, (error, stdout, stderr) => {
         // this removes `codeFilePath` from o/p if present, else leaves as is
@@ -114,6 +120,7 @@ export class Runner {
             reject(CustomApiError.create(500, error.message, error));
           }
         }
+
         // ran without errors (perfectly written shsc code)
         else {
           resolve({ code: "0", stdout, stderr });
@@ -130,7 +137,13 @@ export class Runner {
       }
     });
 
-    return result;
+    try {
+      const result = await resultPromise;
+      return result;
+    } finally {
+      // back to old cwd
+      process.chdir(this.cwd);
+    }
   }
 
   /**
