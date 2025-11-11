@@ -150,11 +150,12 @@ export class Runner {
 
     const stdout = this.env.sanitizePaths(spawnResult.stdout);
     const stderr = this.env.sanitizePaths(spawnResult.stderr);
+    const exitcode = spawnResult.status;
 
-    if (spawnResult.error != null) {
-      const code = String(spawnResult.signal ?? "HTTP 500");
+    if (exitcode == null || exitcode != 0) {
+      const code = String(exitcode ?? "HTTP 500");
       // some info on the error present
-      if (stderr.length > 0 || stdout.length > 0 || spawnResult.signal != null) {
+      if (stderr.length > 0 || stdout.length > 0 || exitcode != null) {
         // stdout present: shsc code o/p present
         // stderr present: shsc errors were printed
         // code present: even if no error or o/p printed, shsc exited with error
@@ -165,7 +166,7 @@ export class Runner {
         throw CustomApiError.create(500, "Internal Server Error", spawnResult.error);
       }
     } else {
-      return { code: "0", stdout, stderr };
+      return { code: `${exitcode}`, stdout, stderr };
     }
   }
 
