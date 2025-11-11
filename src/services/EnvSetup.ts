@@ -6,31 +6,52 @@ import { Nullable } from "@/types";
 export class EnvSetup {
   // ------------------ constants --------------------
 
-  static readonly BIN_RES_DIR = process.cwd() + "/public/bin";
-  static readonly TMP_DIR_NAME = "runner";
-  static readonly BIN_NAME = "shsc-linux";
-  static readonly CODEFILE_NAME = "code.shsc";
+  static readonly ResDirPaths = {
+    /** `public/bin` */
+    BIN: process.cwd() + "/public/bin",
+    /** `public/lib` */
+    LIB: process.cwd() + "/public/lib",
+  };
 
-  static readonly BINDIR_NAME = "bin";
-  static readonly WORKINGDIR_NAME = "cwd";
+  static readonly DirNames = {
+    TMPDIR: "runner",
+    BINDIR: "bundled-bin",
+    LIBDIR: "bundled-lib",
+    WORKINGDIR: "cwd",
+  } as const;
+
+  static readonly BinaryNames = {
+    BWRAP: "bwrap",
+    INTERPRETER: "shsc-linux",
+  } as const;
+
+  static readonly CODEFILE_NAME = "code.shsc";
 
   // ------------------ static --------------------
 
   /** `/tmp/runner` */
   static TmpDir: Nullable<string> = null;
 
-  /** `/tmp/runner/bin` */
+  /** `/tmp/runner/bundled-bin` */
   static TmpBinDir: Nullable<string> = null;
 
+  /** `/tmp/runner/bundled-lib` */
+  static TmpLibDir: Nullable<string> = null;
+
   static init(): void {
-    EnvSetup.TmpDir = path.resolve(os.tmpdir(), EnvSetup.TMP_DIR_NAME);
+    EnvSetup.TmpDir = path.resolve(os.tmpdir(), EnvSetup.DirNames.TMPDIR);
     if (!fs.existsSync(EnvSetup.TmpDir)) {
       fs.mkdirSync(EnvSetup.TmpDir, { recursive: true });
     }
 
-    EnvSetup.TmpBinDir = path.resolve(EnvSetup.TmpDir, EnvSetup.BINDIR_NAME);
+    EnvSetup.TmpBinDir = path.resolve(EnvSetup.TmpDir, EnvSetup.DirNames.BINDIR);
     if (!fs.existsSync(EnvSetup.TmpBinDir)) {
       fs.mkdirSync(EnvSetup.TmpBinDir, { recursive: true });
+    }
+
+    EnvSetup.TmpLibDir = path.resolve(EnvSetup.TmpDir, EnvSetup.DirNames.LIBDIR);
+    if (!fs.existsSync(EnvSetup.TmpLibDir)) {
+      fs.mkdirSync(EnvSetup.TmpLibDir, { recursive: true });
     }
   }
 
@@ -63,17 +84,22 @@ export class EnvSetup {
     }
 
     // this is where uploaded code is kept (and ran)
-    this.sandboxWorkingDir = path.resolve(this.sandboxRootDir, EnvSetup.WORKINGDIR_NAME);
+    this.sandboxWorkingDir = path.resolve(this.sandboxRootDir, EnvSetup.DirNames.WORKINGDIR);
     if (!fs.existsSync(this.sandboxWorkingDir)) {
       fs.mkdirSync(this.sandboxWorkingDir, { recursive: true });
     }
   }
 
   sanitizePaths(str: string): string {
-    return str.replaceAll(`${this.sandboxRootDir}`, "/sandbox").replaceAll(`${EnvSetup.TmpDir}`, "");
+    return str
+      .replaceAll(`${this.sandboxWorkingDir}`, "/sandbox/cwd")
+      .replaceAll(`${this.sandboxRootDir}`, "/sandbox")
+      .replaceAll(`${EnvSetup.TmpBinDir}`, "/bin")
+      .replaceAll(`${EnvSetup.TmpLibDir}`, "/lib")
+      .replaceAll(`${EnvSetup.TmpDir}`, "");
   }
 
-  destory(): void {
+  destroy(): void {
     fs.rmSync(this.sandboxRootDir, { recursive: true });
   }
 }
