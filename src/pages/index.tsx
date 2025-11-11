@@ -34,7 +34,7 @@ interface Tab {
 }
 
 interface ExecResult {
-  code?: Nullable<string | number>;
+  code: string;
   stdout?: Nullable<string>;
   stderr?: Nullable<string>;
 }
@@ -465,7 +465,9 @@ export default function CodeEditor({ examples }: StaticProps): React.ReactNode {
                   {/* exit or error codes */}
                   <div className="Output-ExitCode mb-3 pb-2 border-b border-gray-700">
                     <span className="text-xs text-gray-500">Exit Code: </span>
-                    <span className={output.code === 0 ? "text-green-400" : "text-red-500"}>{output.code}</span>
+                    <span className={["0", "HTTP 200"].includes(output.code) ? "text-green-400" : "text-red-500"}>
+                      {output.code}
+                    </span>
                   </div>
 
                   {/* stdout */}

@@ -7,7 +7,7 @@ import { CustomApiError } from "@/types/errors";
 import { Nullable } from "@/types";
 
 export interface ExecResult {
-  code?: Nullable<string | number>;
+  code: string;
   stdout?: Nullable<string>;
   stderr?: Nullable<string>;
 }
@@ -101,7 +101,7 @@ export class Runner {
         stderr = stderr.replaceAll(`${codeFilePath}`, "code.shsc");
         // if error present (most likely)
         if (error != null) {
-          const code = error.code;
+          const code = String(error.code ?? "HTTP 500");
           // some info on the error present
           if (stderr.length > 0 || stdout.length > 0 || error.code != null) {
             // stdout present: shsc code o/p present
@@ -116,7 +116,7 @@ export class Runner {
         }
         // ran without errors (perfectly written shsc code)
         else {
-          resolve({ code: 0, stdout, stderr });
+          resolve({ code: "0", stdout, stderr });
         }
       });
 

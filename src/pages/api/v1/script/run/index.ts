@@ -118,7 +118,7 @@ export default WithMiddleware(
 function execResultToText(result: ExecResult): string {
   const sectionGap = "\n" + "-".repeat(50) + "\n";
   return (
-    `CODE: ${result.code ?? 0}` +
+    `CODE: ${result.code}` +
     sectionGap +
     "STDOUT:" +
     sectionGap +
