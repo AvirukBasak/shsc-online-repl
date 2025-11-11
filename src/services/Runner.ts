@@ -93,7 +93,7 @@ export class Runner {
       process.chdir(path.dirname(codeFilePath));
       // setup args
       execFilePath = Runner.TmpBinPath;
-      execFileArgs = [codeFilePath];
+      execFileArgs = [path.basename(codeFilePath)];
     } else {
       execFilePath = bwrapPath;
       execFileArgs = this.getBwrapArgs();
@@ -102,9 +102,10 @@ export class Runner {
     const resultPromise = new Promise<ExecResult>((resolve, reject) => {
       // Execute shsc with the code file, pass stdin
       const child = execFile(execFilePath, execFileArgs, (error, stdout, stderr) => {
-        // this removes `codeFilePath` from o/p if present, else leaves as is
-        stdout = stdout.replaceAll(`${codeFilePath}`, "code.shsc");
-        stderr = stderr.replaceAll(`${codeFilePath}`, "code.shsc");
+        // this removes uid and internal dir structure from o/p
+        stdout = this.env.sanitizePaths(stdout);
+        stderr = this.env.sanitizePaths(stderr);
+
         // if error present (most likely)
         if (error != null) {
           const code = String(error.code ?? "HTTP 500");

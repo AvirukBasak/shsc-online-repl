@@ -69,6 +69,10 @@ export class EnvSetup {
     }
   }
 
+  sanitizePaths(str: string): string {
+    return str.replaceAll(`${this.sandboxRootDir}`, "/sandbox").replaceAll(`${EnvSetup.TmpDir}`, "");
+  }
+
   destory(): void {
     fs.rmSync(this.sandboxRootDir, { recursive: true });
   }
