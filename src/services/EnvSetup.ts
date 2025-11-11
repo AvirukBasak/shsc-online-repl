@@ -91,12 +91,18 @@ export class EnvSetup {
   }
 
   sanitizePaths(str: string): string {
-    return str
-      .replaceAll(`${this.sandboxWorkingDir}`, "/sandbox/cwd")
-      .replaceAll(`${this.sandboxRootDir}`, "/sandbox")
-      .replaceAll(`${EnvSetup.TmpBinDir}`, "/bin")
-      .replaceAll(`${EnvSetup.TmpLibDir}`, "/lib")
-      .replaceAll(`${EnvSetup.TmpDir}`, "");
+    return (
+      str
+        // if sandbox not appplied:
+        .replaceAll(`${this.sandboxWorkingDir}`, "/cwd")
+        .replaceAll(`${this.sandboxRootDir}`, "/")
+        .replaceAll(`${EnvSetup.TmpBinDir}`, "/b-bin")
+        .replaceAll(`${EnvSetup.TmpLibDir}`, "/b-lib")
+        .replaceAll(`${EnvSetup.TmpDir}`, "")
+        // if sandbox applied
+        .replaceAll(`/${EnvSetup.DirNames.BINDIR}`, "/b-bin")
+        .replaceAll(`/${EnvSetup.DirNames.LIBDIR}`, "/b-lib")
+    );
   }
 
   destroy(): void {

@@ -124,7 +124,7 @@ export class Runner {
     const bwrapPath = this.getBwrapPath();
     if (bwrapPath == null) {
       // bwrap absent: run without bwrap (unsafe)
-      console.warn("[W] Runner.run: bwrap not found");
+      console.warn("[W] Runner.run: running without bwrap");
       // setup args
       execFilePath = path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.INTERPRETER);
       execFileArgs = [path.basename(codeFilePath)];
@@ -191,7 +191,7 @@ export class Runner {
       "--bind", this.env.sandboxRootDir, "/",
       // make bin path the /bin of sandbox root
       "--ro-bind", EnvSetup.TmpBinDir, `/${EnvSetup.DirNames.BINDIR}`,
-      // "--ro-bind", EnvSetup.TmpLibDir, `/${EnvSetup.DirNames.LIBDIR}`,
+      "--ro-bind", EnvSetup.TmpLibDir, `/${EnvSetup.DirNames.LIBDIR}`,
       // fs mappings
       "--dev", "/dev",
       "--proc", "/proc",
@@ -206,7 +206,7 @@ export class Runner {
       // nobody:nogroup <- removes previleges
       "--uid", "65534", "--gid", "65534",
       // setup env vars
-      // "--setenv", "LD_LIBRARY_PATH", `/${EnvSetup.DirNames.LIBDIR}`,
+      "--setenv", "LD_LIBRARY_PATH", `/${EnvSetup.DirNames.LIBDIR}`,
       "--setenv", "PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "--setenv", "TMPDIR", "/tmp",
       "--setenv", "HOME", `/${EnvSetup.DirNames.WORKINGDIR}`,
@@ -225,46 +225,43 @@ export class Runner {
   }
 
   getBwrapPath(): Nullable<string> {
+    if (EnvSetup.TmpBinDir == null) {
+      throw new Error("EnvSetup.TmpBinDir is null");
+    }
+
     if (EnvSetup.TmpLibDir == null) {
       throw new Error("EnvSetup.TmpLibDir is null");
     }
 
+    // Try preinstalled bwrap
     try {
-      // First, locate bwrap
-      // const pathStr = "";
-      const pathStr = execSync("command -v bwrap", { encoding: "utf-8" }).trim();
-
-      // If preinstalled, use it
-      if (pathStr.length > 0) return pathStr;
-
-      console.warn("[W] Runner.getBwrapPath: bwrap not installed");
-
-      // Else try running using bundle bwrap
-      // prettier-ignore
-      const testArgs = this.buildBwrapArgs(
-        `/${EnvSetup.DirNames.BINDIR}/${EnvSetup.BinaryNames.INTERPRETER}`,
-        "--version"
-      );
-
-      const env = { ...process.env, LD_LIBRARY_PATH: EnvSetup.TmpLibDir, LD_DEBUG: "libs" };
-      const result = spawnSync(`${EnvSetup.TmpBinDir}/${EnvSetup.BinaryNames.BWRAP}`, testArgs, {
-        encoding: "utf-8",
-        env,
-      });
-
-      if (result.error != null || result.status !== 0) {
-        // Bundled bwrap failed the test
-        console.warn("[W] Runner.getBwrapPath: bundled bwrap failed");
-        // console.log(result.status, result.stdout, result.stderr);
-        return null;
-      } else {
-        // console.log(result.status, result.stdout, result.stderr);
-      }
-
-      // Bundled bwrap success
-      return `${EnvSetup.TmpBinDir}/${EnvSetup.BinaryNames.BWRAP}`;
+      const bwrapPath = execSync("command -v bwrap", { encoding: "utf-8" });
+      return bwrapPath.trim();
     } catch (error) {
-      console.trace(error);
+      console.warn("[W] Runner.getBwrapPath: bwrap not installed");
+      console.warn(error);
+    }
+
+    // Else try running bundled bwrap
+    // prettier-ignore
+    const testArgs = this.buildBwrapArgs(
+      `/${EnvSetup.DirNames.BINDIR}/${EnvSetup.BinaryNames.INTERPRETER}`,
+      "--version"
+    );
+
+    const env = { ...process.env, LD_LIBRARY_PATH: EnvSetup.TmpLibDir, LD_DEBUG: "libs" };
+    const bundledPath = path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.BWRAP);
+    const bwrapResult = spawnSync(bundledPath, testArgs, { encoding: "utf-8", env });
+
+    if (bwrapResult.status === 0) {
+      // console.warn(bwrapResult.output.join("\n"));
+      return bundledPath;
+    }
+
+    // Else return null
+    else {
+      console.warn("[W] Runner.getBwrapPath: bundled bwrap check failed");
+      console.warn(bwrapResult);
       return null;
     }
   }
