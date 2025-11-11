@@ -28,7 +28,7 @@ export class Runner {
     // This generates binaries inside /tmp/runner/bundled-bin
     {
       // this is the path to the binary file resource
-      const binResDir = path.resolve(EnvSetup.ResDirPaths.BIN);
+      const binResDir = path.resolve(process.cwd(), EnvSetup.ResDirPaths.BIN);
       // this is where he binary file will be copied to for exec
       const binTmpDir = path.resolve(EnvSetup.TmpBinDir);
       // list of all lib files
@@ -56,7 +56,7 @@ export class Runner {
     // This generates libraries inside /tmp/runner/bundled-lib
     {
       // this is the path to the lib file resource
-      const libResDir = path.resolve(EnvSetup.ResDirPaths.LIB);
+      const libResDir = path.resolve(process.cwd(), EnvSetup.ResDirPaths.LIB);
       // this is where he lib file will be copied to for exec
       const libTmpDir = path.resolve(EnvSetup.TmpLibDir);
       // list of all lib files

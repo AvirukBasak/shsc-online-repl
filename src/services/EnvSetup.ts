@@ -8,9 +8,9 @@ export class EnvSetup {
 
   static readonly ResDirPaths = {
     /** `public/bin` */
-    BIN: process.cwd() + "/public/bin",
+    BIN: "public/bin",
     /** `public/lib` */
-    LIB: process.cwd() + "/public/lib",
+    LIB: "public/lib",
   };
 
   static readonly DirNames = {
