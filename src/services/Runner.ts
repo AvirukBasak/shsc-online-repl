@@ -127,7 +127,7 @@ export class Runner {
       console.warn("[W] Runner.run: running without bwrap");
       // setup args
       execFilePath = path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.INTERPRETER);
-      execFileArgs = [path.basename(codeFilePath)];
+      execFileArgs = [codeFilePath];
     } else {
       execFilePath = bwrapPath;
       execFileArgs = this.buildBwrapArgs(
@@ -191,7 +191,7 @@ export class Runner {
       "--bind", this.env.sandboxRootDir, "/",
       // make bin path the /bin of sandbox root
       "--ro-bind", EnvSetup.TmpBinDir, `/${EnvSetup.DirNames.BINDIR}`,
-      "--ro-bind", EnvSetup.TmpLibDir, `/${EnvSetup.DirNames.LIBDIR}`,
+      // "--ro-bind", EnvSetup.TmpLibDir, `/${EnvSetup.DirNames.LIBDIR}`,
       // fs mappings
       "--dev", "/dev",
       "--proc", "/proc",
@@ -206,7 +206,7 @@ export class Runner {
       // nobody:nogroup <- removes previleges
       "--uid", "65534", "--gid", "65534",
       // setup env vars
-      "--setenv", "LD_LIBRARY_PATH", `/${EnvSetup.DirNames.LIBDIR}`,
+      // "--setenv", "LD_LIBRARY_PATH", `/${EnvSetup.DirNames.LIBDIR}`,
       "--setenv", "PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "--setenv", "TMPDIR", "/tmp",
       "--setenv", "HOME", `/${EnvSetup.DirNames.WORKINGDIR}`,
