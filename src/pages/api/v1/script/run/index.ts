@@ -65,7 +65,7 @@ export default WithMiddleware(
 
       const runner = Runner.create(uid);
       try {
-        const result = await runner.run(code);
+        const result = runner.run(code);
 
         if (!text) return respond(res, { status: 200, json: result });
         else return respond(res, { status: 200, text: execResultToText(result) });
@@ -99,7 +99,7 @@ export default WithMiddleware(
 
       const runner = Runner.create(uid);
       try {
-        const result = await runner.run(code, stdin);
+        const result = runner.run(code, stdin);
 
         if (!text) return respond(res, { status: 200, json: result });
         else return respond(res, { status: 200, text: execResultToText(result) });
