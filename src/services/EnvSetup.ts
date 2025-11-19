@@ -23,6 +23,7 @@ export class EnvSetup {
   static readonly BinaryNames = {
     BWRAP: "bwrap",
     INTERPRETER: "shsc-linux",
+    LD_LINUX: "ld-linux-x86-64.so.2"
   } as const;
 
   static readonly CODEFILE_NAME = "code.shsc";
