@@ -19,13 +19,9 @@ export class Bwrap {
 
   /**
    * Returns command and args that can be used directly with spawn.
-   * @param {string[]} commandAndArgs Command with args to run inside bwrap
-   * @returns {string[]} Array of arguments to pass to execFile("bwrap", args, ...)
+   * Encapsulates said command with required interprewter or bwrap depending on which is available.
    */
-  build(
-    command: { insideBwrap: string; outsideBwrap: string },
-    ...args: string[]
-  ): { command: string; args: string[] } {
+  build(cmd: { insideBwrap: string; outsideBwrap: string }, ...cmdArgs: string[]): { cmd: string; args: string[] } {
     if (EnvSetup.TmpLibDir == null) {
       throw new Error("EnvSetup.TmpLibDir is null");
     }
@@ -35,25 +31,28 @@ export class Bwrap {
     switch (bwrapTest.status) {
       case "LOCAL": {
         const bwrapPath = bwrapTest.path;
-        const bwrapArgs = this.buildArgs(command.insideBwrap, ...args);
-        return { command: bwrapPath, args: bwrapArgs };
+        const bwrapArgs = this.buildArgs(cmd.insideBwrap, ...cmdArgs);
+        return { cmd: bwrapPath, args: bwrapArgs };
       }
       case "BUNDLED": {
         const bwrapPath = bwrapTest.path;
         const ldLinuxPath = bwrapTest.ldLinux;
-        const bwrapArgs = this.buildArgs(command.insideBwrap, ...args);
+        const bwrapArgs = this.buildArgs(cmd.insideBwrap, ...cmdArgs);
         if (ldLinuxPath != null) {
-          return { command: ldLinuxPath, args: ["--library-path", EnvSetup.TmpLibDir, bwrapPath, ...bwrapArgs] };
+          return { cmd: ldLinuxPath, args: ["--library-path", EnvSetup.TmpLibDir, bwrapPath, ...bwrapArgs] };
         } else {
-          return { command: bwrapPath, args: bwrapArgs };
+          return { cmd: bwrapPath, args: bwrapArgs };
         }
       }
       case "N/A": {
         const ldLinuxPath = this.findLdLinux();
         if (ldLinuxPath != null) {
-          return { command: ldLinuxPath, args: ["--library-path", EnvSetup.TmpLibDir, command.outsideBwrap, ...args] };
+          return {
+            cmd: ldLinuxPath,
+            args: ["--library-path", EnvSetup.TmpLibDir, cmd.outsideBwrap, ...cmdArgs],
+          };
         } else {
-          return { command: command.outsideBwrap, args };
+          return { cmd: cmd.outsideBwrap, args: cmdArgs };
         }
       }
     }
