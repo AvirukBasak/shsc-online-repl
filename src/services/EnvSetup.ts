@@ -102,6 +102,7 @@ export class EnvSetup {
         // if sandbox applied
         .replaceAll(`/${EnvSetup.DirNames.BINDIR}`, "/b-bin")
         .replaceAll(`/${EnvSetup.DirNames.LIBDIR}`, "/b-lib")
+        .replace(/[a-zA-Z0-9]{64}/g, "[REDACTED]")
     );
   }
 
