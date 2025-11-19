@@ -84,17 +84,14 @@ export class Bwrap {
     try {
       const bwrapPath = execSync("command -v bwrap", { encoding: "utf-8" });
       return { status: "LOCAL", path: bwrapPath, ldLinux: null };
-    } catch (error) {
-      console.warn("[W] Runner.getBwrapPath: bwrap not installed");
-      console.warn(error);
+    } catch (e) {
+      const error = e as Error;
+      console.warn("[W] Runner.testBwrap: bwrap not installed");
+      console.warn("[W] Runner.testBwrap:", error.message);
     }
 
     // Else try running bundled bwrap
-    // prettier-ignore
-    const testArgs = this.buildArgs(
-      `/${EnvSetup.DirNames.BINDIR}/${EnvSetup.BinaryNames.INTERPRETER}`,
-      "--version"
-    );
+    const testArgs = this.buildArgs(`/${EnvSetup.DirNames.BINDIR}/${EnvSetup.BinaryNames.INTERPRETER}`, "--version");
 
     const env = { ...process.env, LD_LIBRARY_PATH: EnvSetup.TmpLibDir, LD_DEBUG: "libs" };
     const bwrapPath = path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.BWRAP);
@@ -114,14 +111,14 @@ export class Bwrap {
     }
 
     if (bwrapResult.status === 0) {
-      // console.warn(bwrapResult.output.join("\n"));
       return { status: "BUNDLED", path: bwrapPath, ldLinux: ldLinuxPath };
     }
 
     // Else return null
     else {
-      console.warn("[W] Runner.getBwrapPath: bundled bwrap check failed");
-      console.warn(bwrapResult);
+      console.warn("[W] Runner.testBwrap: bundled bwrap check failed");
+      console.warn("Status:", bwrapResult.status);
+      console.warn("Output:\n" + bwrapResult.output.filter(Boolean).join("\n"));
       return { status: "N/A", path: null, ldLinux: null };
     }
   }
@@ -190,6 +187,8 @@ export class Bwrap {
     if (fs.existsSync(ldLinuxPath)) {
       return ldLinuxPath;
     }
+
+    console.warn("[W] Runner.findLdLinux: bundled ld-linux not found");
     return null;
   }
 }
