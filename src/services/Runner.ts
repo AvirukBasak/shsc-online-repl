@@ -121,10 +121,16 @@ export class Runner {
       fs.writeFileSync(codeFilePath, code);
     }
 
-    const outsideBwrap = path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.INTERPRETER);
-    const insideBwrap = `/${EnvSetup.DirNames.BINDIR}/${EnvSetup.BinaryNames.INTERPRETER}`;
+    const insideBwrap = {
+      cmd: `/${EnvSetup.DirNames.BINDIR}/${EnvSetup.BinaryNames.INTERPRETER}`,
+      args: [EnvSetup.CODEFILE_NAME],
+    };
+    const outsideBwrap = {
+      cmd: path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.INTERPRETER),
+      args: [path.resolve(this.env.sandboxWorkingDir, EnvSetup.CODEFILE_NAME)],
+    };
 
-    const { cmd, args } = this.bwrap.build({ insideBwrap, outsideBwrap }, EnvSetup.CODEFILE_NAME);
+    const { cmd, args } = this.bwrap.build({ insideBwrap, outsideBwrap });
 
     const env = { ...process.env, LD_LIBRARY_PATH: EnvSetup.TmpLibDir };
     let spawnResult: Nullable<SpawnSyncReturns<string>> = null;

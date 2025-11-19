@@ -21,7 +21,13 @@ export class Bwrap {
    * Returns command and args that can be used directly with spawn.
    * Encapsulates said command with required interprewter or bwrap depending on which is available.
    */
-  build(cmd: { insideBwrap: string; outsideBwrap: string }, ...cmdArgs: string[]): { cmd: string; args: string[] } {
+  build({
+    insideBwrap,
+    outsideBwrap,
+  }: {
+    insideBwrap: { cmd: string; args: string[] };
+    outsideBwrap: { cmd: string; args: string[] };
+  }): { cmd: string; args: string[] } {
     if (EnvSetup.TmpLibDir == null) {
       throw new Error("EnvSetup.TmpLibDir is null");
     }
@@ -31,13 +37,13 @@ export class Bwrap {
     switch (bwrapTest.status) {
       case "LOCAL": {
         const bwrapPath = bwrapTest.path;
-        const bwrapArgs = this.buildArgs(cmd.insideBwrap, ...cmdArgs);
+        const bwrapArgs = this.buildArgs(insideBwrap.cmd, ...insideBwrap.args);
         return { cmd: bwrapPath, args: bwrapArgs };
       }
       case "BUNDLED": {
         const bwrapPath = bwrapTest.path;
         const ldLinuxPath = bwrapTest.ldLinux;
-        const bwrapArgs = this.buildArgs(cmd.insideBwrap, ...cmdArgs);
+        const bwrapArgs = this.buildArgs(insideBwrap.cmd, ...insideBwrap.args);
         if (ldLinuxPath != null) {
           return { cmd: ldLinuxPath, args: ["--library-path", EnvSetup.TmpLibDir, bwrapPath, ...bwrapArgs] };
         } else {
@@ -49,10 +55,10 @@ export class Bwrap {
         if (ldLinuxPath != null) {
           return {
             cmd: ldLinuxPath,
-            args: ["--library-path", EnvSetup.TmpLibDir, cmd.outsideBwrap, ...cmdArgs],
+            args: ["--library-path", EnvSetup.TmpLibDir, outsideBwrap.cmd, ...outsideBwrap.args],
           };
         } else {
-          return { cmd: cmd.outsideBwrap, args: cmdArgs };
+          return { cmd: outsideBwrap.cmd, args: outsideBwrap.args };
         }
       }
     }
