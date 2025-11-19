@@ -128,11 +128,13 @@ export class Runner {
     };
     const outsideBwrap = {
       cmd: path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.INTERPRETER),
-      args: [path.resolve(this.env.sandboxWorkingDir, EnvSetup.CODEFILE_NAME)],
+      args: [EnvSetup.CODEFILE_NAME],
     };
 
+    const cwd = path.resolve(this.env.sandboxWorkingDir);
+
     const { cmd, args, env } = this.bwrap.build({ insideBwrap, outsideBwrap });
-    const spawnResult = spawnSync(cmd, args, { encoding: "utf-8", env, input: stdin ?? "" });
+    const spawnResult = spawnSync(cmd, args, { encoding: "utf-8", env, cwd, input: stdin ?? "" });
 
     const stdout = this.env.sanitizePaths(spawnResult.stdout);
     const stderr = this.env.sanitizePaths(spawnResult.stderr);
