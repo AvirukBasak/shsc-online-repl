@@ -1,6 +1,5 @@
-import fs from "fs";
 import path from "path";
-import { execSync, spawnSync, SpawnSyncReturns } from "child_process";
+import { execSync, spawnSync } from "child_process";
 import { EnvSetup } from "./EnvSetup";
 import { Nullable } from "@/types";
 
@@ -27,51 +26,28 @@ export class Bwrap {
   }: {
     insideBwrap: { cmd: string; args: string[] };
     outsideBwrap: { cmd: string; args: string[] };
-  }): { cmd: string; args: string[] } {
+  }): { cmd: string; args: string[]; env: NodeJS.ProcessEnv } {
     if (EnvSetup.TmpLibDir == null) {
       throw new Error("EnvSetup.TmpLibDir is null");
     }
 
-    const bwrapTest = this.testBwrap();
-
-    switch (bwrapTest.status) {
-      case "LOCAL": {
-        const bwrapPath = bwrapTest.path;
-        const bwrapArgs = this.buildArgs(insideBwrap.cmd, ...insideBwrap.args);
-        return { cmd: bwrapPath, args: bwrapArgs };
-      }
-      case "BUNDLED": {
-        const bwrapPath = bwrapTest.path;
-        const ldLinuxPath = bwrapTest.ldLinux;
-        const bwrapArgs = this.buildArgs(insideBwrap.cmd, ...insideBwrap.args);
-        if (ldLinuxPath != null) {
-          return { cmd: ldLinuxPath, args: ["--library-path", EnvSetup.TmpLibDir, bwrapPath, ...bwrapArgs] };
-        } else {
-          return { cmd: bwrapPath, args: bwrapArgs };
-        }
-      }
-      case "N/A": {
-        const ldLinuxPath = this.findLdLinux();
-        if (ldLinuxPath != null) {
-          return {
-            cmd: ldLinuxPath,
-            args: ["--library-path", EnvSetup.TmpLibDir, outsideBwrap.cmd, ...outsideBwrap.args],
-          };
-        } else {
-          return { cmd: outsideBwrap.cmd, args: outsideBwrap.args };
-        }
-      }
+    const bwrapPath = this.testBwrap();
+    if (bwrapPath != null) {
+      // With bwrap: use bundled lib so that bwrap can run
+      const bwrapArgs = this.buildArgs(insideBwrap.cmd, ...insideBwrap.args);
+      const env = { ...process.env, LD_LIBRARY_PATH: EnvSetup.TmpLibDir };
+      return { cmd: bwrapPath, args: bwrapArgs, env };
+    } else {
+      // Without bwrap: use system lib so it doesn't interfere with shsc
+      const env = process.env;
+      return { cmd: outsideBwrap.cmd, args: outsideBwrap.args, env };
     }
   }
 
   /**
-   * Returns path to bwrap and ld-linux as needed depending on which bwrap is being used.
-   * @returns Status and path to bwrap and ld-linux
+   * Returns path to bwrap.
    */
-  private testBwrap():
-    | { status: "LOCAL"; path: string; ldLinux: null }
-    | { status: "BUNDLED"; path: string; ldLinux: Nullable<string> }
-    | { status: "N/A"; path: null; ldLinux: null } {
+  private testBwrap(): Nullable<string> {
     if (EnvSetup.TmpBinDir == null) {
       throw new Error("EnvSetup.TmpBinDir is null");
     }
@@ -82,8 +58,9 @@ export class Bwrap {
 
     // Try preinstalled bwrap
     try {
-      const bwrapPath = execSync("command -v bwrap", { encoding: "utf-8" });
-      return { status: "LOCAL", path: bwrapPath, ldLinux: null };
+      const bwrapPath = execSync("command -v bwrap", { encoding: "utf-8" }).trim();
+      console.info("[I] Runner.testBwrap: bwrap is installed");
+      return bwrapPath;
     } catch (e) {
       const error = e as Error;
       console.warn("[W] Runner.testBwrap: bwrap not installed");
@@ -95,31 +72,19 @@ export class Bwrap {
 
     const env = { ...process.env, LD_LIBRARY_PATH: EnvSetup.TmpLibDir, LD_DEBUG: "libs" };
     const bwrapPath = path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.BWRAP);
-
-    const ldLinuxPath = this.findLdLinux();
-    let bwrapResult: Nullable<SpawnSyncReturns<string>> = null;
-    if (ldLinuxPath != null) {
-      bwrapResult = spawnSync(ldLinuxPath, ["--library-path", EnvSetup.TmpLibDir, bwrapPath, ...testArgs], {
-        encoding: "utf-8",
-        env,
-      });
-    } else {
-      bwrapResult = spawnSync(bwrapPath, testArgs, {
-        encoding: "utf-8",
-        env,
-      });
-    }
+    const bwrapResult = spawnSync(bwrapPath, testArgs, { encoding: "utf-8", env });
 
     if (bwrapResult.status === 0) {
-      return { status: "BUNDLED", path: bwrapPath, ldLinux: ldLinuxPath };
+      console.info("[I] Runner.testBwrap: bundled bwrap check passed");
+      return bwrapPath;
     }
 
     // Else return null
     else {
       console.warn("[W] Runner.testBwrap: bundled bwrap check failed");
-      console.warn("Status:", bwrapResult.status);
-      console.warn("Output:\n" + bwrapResult.output.filter(Boolean).join("\n"));
-      return { status: "N/A", path: null, ldLinux: null };
+      console.warn("[W] Runner.testBwrap: Status:", bwrapResult.status);
+      console.warn("[W] Runner.testBwrap: Output:\n" + bwrapResult.output.filter(Boolean).join("\n"));
+      return null;
     }
   }
 
@@ -145,7 +110,6 @@ export class Bwrap {
       "--bind", this.env.sandboxRootDir, "/",
       // make bin path the /bin of sandbox root
       "--ro-bind", EnvSetup.TmpBinDir, `/${EnvSetup.DirNames.BINDIR}`,
-      // "--ro-bind", EnvSetup.TmpLibDir, `/${EnvSetup.DirNames.LIBDIR}`,
       // fs mappings
       "--dev", "/dev",
       "--proc", "/proc",
@@ -160,7 +124,6 @@ export class Bwrap {
       // nobody:nogroup <- removes previleges
       "--uid", "65534", "--gid", "65534",
       // setup env vars
-      // "--setenv", "LD_LIBRARY_PATH", `/${EnvSetup.DirNames.LIBDIR}`,
       "--setenv", "PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "--setenv", "TMPDIR", "/tmp",
       "--setenv", "HOME", `/${EnvSetup.DirNames.WORKINGDIR}`,
@@ -176,19 +139,5 @@ export class Bwrap {
     ];
 
     return args;
-  }
-
-  private findLdLinux(): Nullable<string> {
-    if (EnvSetup.TmpLibDir == null) {
-      throw new Error("EnvSetup.TmpLibDir is null");
-    }
-
-    const ldLinuxPath = path.resolve(EnvSetup.TmpLibDir, EnvSetup.BinaryNames.LD_LINUX);
-    if (fs.existsSync(ldLinuxPath)) {
-      return ldLinuxPath;
-    }
-
-    console.warn("[W] Runner.findLdLinux: bundled ld-linux not found");
-    return null;
   }
 }

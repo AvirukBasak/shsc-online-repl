@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { spawnSync, SpawnSyncReturns } from "child_process";
+import { spawnSync } from "child_process";
 import { EnvSetup } from "@/services/EnvSetup";
 import { CustomApiError } from "@/types/errors";
 import { Nullable } from "@/types";
@@ -123,6 +123,7 @@ export class Runner {
 
     const insideBwrap = {
       cmd: `/${EnvSetup.DirNames.BINDIR}/${EnvSetup.BinaryNames.INTERPRETER}`,
+      // cmd: path.resolve(EnvSetup.TmpBinDir, EnvSetup.BinaryNames.INTERPRETER),
       args: [EnvSetup.CODEFILE_NAME],
     };
     const outsideBwrap = {
@@ -130,12 +131,8 @@ export class Runner {
       args: [path.resolve(this.env.sandboxWorkingDir, EnvSetup.CODEFILE_NAME)],
     };
 
-    const { cmd, args } = this.bwrap.build({ insideBwrap, outsideBwrap });
-
-    const env = { ...process.env, LD_LIBRARY_PATH: EnvSetup.TmpLibDir };
-    let spawnResult: Nullable<SpawnSyncReturns<string>> = null;
-
-    spawnResult = spawnSync(cmd, args, { encoding: "utf-8", env, input: stdin ?? "" });
+    const { cmd, args, env } = this.bwrap.build({ insideBwrap, outsideBwrap });
+    const spawnResult = spawnSync(cmd, args, { encoding: "utf-8", env, input: stdin ?? "" });
 
     const stdout = this.env.sanitizePaths(spawnResult.stdout);
     const stderr = this.env.sanitizePaths(spawnResult.stderr);
